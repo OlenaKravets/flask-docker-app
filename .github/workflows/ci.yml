@@ -26,7 +26,7 @@ jobs:
         run: |
           for i in {1..10}; do
             echo "⏳ Спроба $i: перевіряємо Flask..."
-            curl --fail http://localhost:5000 && exit 0
+            curl --fail http://localhost:5001 && exit 0
             echo "❌ Спроба $i: Flask ще не піднявся. Повтор через 3 сек..."
             sleep 3
           done
