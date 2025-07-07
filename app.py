@@ -16,7 +16,7 @@ for i in range(10):
         )
         print("✅ MySQL підключено успішно!")
         break
-    except mysql.connector.Error as e:
+    except mysql.connector.Error:
         print(f"❌ Спроба {i+1}: БД ще не готова. Повтор через 3 секунди...")
         time.sleep(3)
 else:
@@ -26,12 +26,11 @@ else:
 def get_users():
     cursor = db.cursor(dictionary=True)
     cursor.execute("SELECT * FROM users")
-    users = cursor.fetchall()
-    return jsonify(users)
+    return jsonify(cursor.fetchall())
 
-@app.route("/health", methods=["GET"])
+@app.route("/health")
 def health():
     return jsonify({"status": "ok"}), 200
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=5000, debug=True)
+    app.run(host="0.0.0.0", port=5000)
