@@ -1,0 +1,28 @@
+version: '3.8'
+
+services:
+  mysql_db:
+    image: mysql:8.0
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpass
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql  
+
+  flask_api:
+    build: .
+    ports:
+      - "5001:5000"
+    environment:
+      MYSQL_HOST: mysql_db
+      MYSQL_USER: root
+      MYSQL_PASSWORD: rootpass
+      MYSQL_DATABASE: flask_db
+    depends_on:
+      - mysql_db
+
+volumes:
+  mysql_data:
