@@ -29,3 +29,6 @@ services:
     depends_on:
       mysql_db:
         condition: service_healthy
+
+volumes:
+  mysql_data:
