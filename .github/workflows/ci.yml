@@ -25,7 +25,7 @@ jobs:
       run: pip install mysql-connector-python flask
 
     - name: Build and run containers
-      run: docker-compose up -d
+      run: docker compose up -d
 
     - name: Wait for MySQL to be healthy
       run: |
