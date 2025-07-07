@@ -2,34 +2,65 @@ name: Flask Docker CI
 
 on:
   push:
-    branches: ["main"]
+    branches: [main]
   pull_request:
-    branches: ["main"]
+    branches: [main]
 
 jobs:
   build:
     runs-on: ubuntu-latest
 
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: rootpass
+          MYSQL_DATABASE: flask_db
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h localhost"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
 
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
 
-      - name: Build and run Docker Compose
+      - name: Install dependencies
         run: |
-          docker compose up -d --build
-          sleep 10
+          python -m pip install --upgrade pip
+          pip install flask mysql-connector-python
 
-      - name: Check Flask is running
+      - name: Wait for MySQL to be healthy
         run: |
           for i in {1..10}; do
-            echo "⏳ Спроба $i: перевіряємо Flask..."
-            curl --fail http://localhost:5000 && exit 0
-            echo "❌ Спроба $i: Flask ще не піднявся. Повтор через 3 сек..."
+            echo "⏳ Очікування MySQL... ($i)"
+            nc -z localhost 3306 && echo "✅ MySQL на порту 3306" && break
             sleep 3
           done
-          echo "🚫 Flask так і не відповів."
+
+      - name: Run Flask app in background
+        run: |
+          python app.py &
+          sleep 5
+
+      - name: Check Flask /health endpoint
+        run: |
+          for i in {1..10}; do
+            echo "🔁 Перевірка Flask /health ($i)"
+            if curl -s http://localhost:5000/health | grep OK; then
+              echo "✅ Flask відповідає на /health"
+              exit 0
+            fi
+            sleep 3
+          done
+          echo "❌ Flask не відповідає"
           exit 1
 
