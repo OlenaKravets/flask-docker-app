@@ -2,65 +2,57 @@ name: Flask Docker CI
 
 on:
   push:
-    branches: [main]
-  pull_request:
-    branches: [main]
 
 jobs:
   build:
     runs-on: ubuntu-latest
 
     services:
-      mysql:
-        image: mysql:8.0
-        env:
-          MYSQL_ROOT_PASSWORD: rootpass
-          MYSQL_DATABASE: flask_db
-        ports:
-          - 3306:3306
-        options: >-
-          --health-cmd="mysqladmin ping -h localhost"
-          --health-interval=10s
-          --health-timeout=5s
-          --health-retries=5
+      docker:
+        image: docker:20.10.7
+        options: --privileged
 
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
+    - name: Checkout code
+      uses: actions/checkout@v3
 
-      - name: Set up Python
-        uses: actions/setup-python@v4
-        with:
-          python-version: '3.11'
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
 
-      - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install flask mysql-connector-python
+    - name: Install dependencies
+      run: pip install mysql-connector-python flask
 
-      - name: Wait for MySQL to be healthy
-        run: |
-          for i in {1..10}; do
-            echo "⏳ Очікування MySQL... ($i)"
-            nc -z localhost 3306 && echo "✅ MySQL на порту 3306" && break
-            sleep 3
-          done
+    - name: Build and run containers
+      run: docker-compose up -d
 
-      - name: Run Flask app in background
-        run: |
-          python app.py &
-          sleep 5
+    - name: Wait for MySQL to be healthy
+      run: |
+        for i in {1..10}; do
+          if docker inspect --format='{{.State.Health.Status}}' flask_docker_app-mysql_db-1 | grep healthy; then
+            echo "✅ MySQL is healthy"
+            break
+          fi
+          echo "⏳ Waiting for MySQL..."
+          sleep 3
+        done
 
-      - name: Check Flask /health endpoint
-        run: |
-          for i in {1..10}; do
-            echo "🔁 Перевірка Flask /health ($i)"
-            if curl -s http://localhost:5000/health | grep OK; then
-              echo "✅ Flask відповідає на /health"
-              exit 0
-            fi
-            sleep 3
-          done
-          echo "❌ Flask не відповідає"
-          exit 1
+    - name: Run Flask app in background
+      run: |
+        python app.py &
+        sleep 5
+
+    - name: Check Flask /health endpoint
+      run: |
+        for i in {1..10}; do
+          echo "🩺 Перевірка Flask /health ($i)"
+          if curl --fail http://localhost:5000/health; then
+            echo "✅ Flask відповідає!"
+            exit 0
+          fi
+          sleep 3
+        done
+        echo "❌ Flask не відповідає"
+        exit 1
 
