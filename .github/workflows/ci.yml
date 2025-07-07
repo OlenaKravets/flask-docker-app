@@ -2,30 +2,34 @@ name: Flask Docker CI
 
 on:
   push:
-    branches: [ "main" ]
+    branches: ["main"]
   pull_request:
-    branches: [ "main" ]
+    branches: ["main"]
 
 jobs:
   build:
     runs-on: ubuntu-latest
 
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v3
+      - name: Checkout code
+        uses: actions/checkout@v3
 
-    - name: Set up Docker Buildx
-      uses: docker/setup-buildx-action@v3
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
 
-    - name: Build and run Docker Compose
-      run: |
-        docker compose up -d --build
-        sleep 10
-        
-   - name: Check Flask is running
-  run: |
-    for i in {1..10}; do
-      echo "⏳ Checking Flask... attempt $i"
-      curl --fail http://localhost:5000 && break
-      sleep 3
-    done
+      - name: Build and run Docker Compose
+        run: |
+          docker compose up -d --build
+          sleep 10
+
+      - name: Check Flask is running
+        run: |
+          for i in {1..10}; do
+            echo "⏳ Спроба $i: перевіряємо Flask..."
+            curl --fail http://localhost:5000 && exit 0
+            echo "❌ Спроба $i: Flask ще не піднявся. Повтор через 3 сек..."
+            sleep 3
+          done
+          echo "🚫 Flask так і не відповів."
+          exit 1
+
