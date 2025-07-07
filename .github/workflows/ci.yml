@@ -19,7 +19,7 @@ jobs:
 
     - name: Build and run Docker Compose
       run: |
-        docker-compose up -d --build
+        docker compose up -d --build
         sleep 10
     - name: Check Flask is running
       run: |
