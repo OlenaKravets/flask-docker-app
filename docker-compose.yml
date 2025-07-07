@@ -10,7 +10,12 @@ services:
       - "3306:3306"
     volumes:
       - mysql_data:/var/lib/mysql
-      - ./init.sql:/docker-entrypoint-initdb.d/init.sql  
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   flask_api:
     build: .
@@ -22,7 +27,5 @@ services:
       MYSQL_PASSWORD: rootpass
       MYSQL_DATABASE: flask_db
     depends_on:
-      - mysql_db
-
-volumes:
-  mysql_data:
+      mysql_db:
+        condition: service_healthy
